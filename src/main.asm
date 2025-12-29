@@ -166,6 +166,9 @@ check_extension:
     cmp byte [rax + 1], 'c'
     je type_css
 
+    cmp byte [rax + 1], 'j'
+    je type_js
+
     jmp type_unknown
 
 type_html:
@@ -176,6 +179,11 @@ type_html:
 type_css:
     mov r13, mime_css
     mov r14, mime_css_len
+    jmp send_response
+
+type_js:
+    mov r13, mime_js
+    mov r14, mime_js_len
     jmp send_response
 
 type_unknown:
