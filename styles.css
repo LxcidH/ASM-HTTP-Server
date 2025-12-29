@@ -1,0 +1,17 @@
+body {
+    background-color: #0d0d0d;
+    color: #00ff41; /* Bright Green */
+}
+
+.terminal {
+    border: 2px solid #00ff41;
+    padding: 20px;
+    max-width: 700px;
+    margin: 0 auto;
+    box-shadow: 0 0 20px rgba(0, 255, 65, 0.5);
+}
+
+h1 {
+    border-bottom: 1px dashed #00ff41;
+    padding-bottom: 10px;
+}
