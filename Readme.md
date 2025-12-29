@@ -2,8 +2,8 @@
 
 Naserver is a simple, bloat free HTML server wrote it pure x64 assembly.
 
+# Installation Guide
 
-# Installation Guide 
 Run this wherever you'd like to install NaServer:
 
 `git clone https://github.com/LxcidH/NaServer`
@@ -12,3 +12,8 @@ Run this wherever you'd like to install NaServer:
 `sudo ln -s $(pwd)/NaServer /usr/local/bin/NaServer`
 This will build the NaServer binary and symlink it to the path on the right, to allow it to be ran in any directory
 
+# Usage
+
+Go to a directory containing HTML/CSS/JS files and run:
+`NaServer`
+This defaults to "localhost:8080" although this can be change in the src/main.asm file.
