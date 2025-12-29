@@ -11,24 +11,26 @@ section .data
     delimiter: db ' '
     index_html_str: db "index.html", 0
 
-    http_response:
-        ; Status line
-        db "HTTP/1.1 200 OK", 0x0D, 0x0A
+    http_ok db "HTTP/1.1 200 OK", 0x0D, 0x0A
+    http_ok_len equ $-http_ok
 
-        ; Headers
-        db "Content-Type: text/html", 0x0D, 0x0A
-        db "Connection: close", 0x0D, 0x0A
+    ; MIME types labels
+    mime_html   db "Content-Type: text/html", 0x0D, 0x0A, 0x0D, 0x0A
+    mime_html_len equ $-mime_html
+    mime_css    db "Content-Type: text/css", 0x0D, 0x0A, 0x0D, 0x0A
+    mime_css_len equ $-mime_css
+    mime_js     db "Content-Type: text/javascript", 0x0D, 0x0A, 0x0D, 0x0A
+    mime_js_len equ $-mime_js
+    mime_unk    db "Content-Type: text/plain", 0x0D, 0x0A, 0x0D, 0x0A
+    mime_unk_len equ $-mime_unk
 
-        ; The blank line
-        db 0x0D, 0x0A
-    http_response_len equ $-http_response
     
     ; The sockaddr_in struct (16 bytes)
     pop_sa:
         dw 2            ; sin_family: AF_INET (2 bytes) -> 0x0002
                         ; (x86 stores this as 02 00, which is fine for local constants)
         
-        db 0x1F, 0x91   ; sin_port: port 8080 (2 bytes)
+        db 0x1F, 0x90   ; sin_port: port 8080 (2 bytes)
                         ; We write the high byte (1F), then the low byte (90)
                         ; so memory is [1F][90] (big endian)
 
@@ -118,6 +120,14 @@ found_end:
     je single_char
 
 read_file:
+    ; Skip leading slash of file name
+    mov rsi, [FILENAME_START]
+    cmp byte [rsi], '/'
+    jne do_open
+
+    inc qword [FILENAME_START]  ; Advance ptr by 1 byte to skip '/'
+
+do_open:
     ; SYS_OPEN
     mov rax, 2
     mov rdi, [FILENAME_START]
@@ -130,11 +140,60 @@ read_file:
     ; Save file FD
     mov r15, rax 
 
-    ; SYS_WRITE - Send the HTML header
+    ; Check for index, if we came from single_char, we are serving index.html
+    mov rbx, [FILENAME_START]
+    cmp rbx, index_html_str
+    je type_html
+
+identify_content_type:
+    mov rax, [FILENAME_END]
+
+scan_back_loop:
+    cmp rax, [FILENAME_START]
+    je type_unknown
+    dec rax
+    cmp byte [rax], '.'
+    je check_extension
+    jmp scan_back_loop
+
+check_extension:
+    ; rax now points to '.'
+    ; Check the next byte
+
+    cmp byte [rax + 1], 'h'
+    je type_html
+
+    cmp byte [rax + 1], 'c'
+    je type_css
+
+    jmp type_unknown
+
+type_html:
+    mov r13, mime_html
+    mov r14, mime_html_len
+    jmp send_response
+
+type_css:
+    mov r13, mime_css
+    mov r14, mime_css_len
+    jmp send_response
+
+type_unknown:
+    mov r13, mime_unk
+    mov r14, mime_unk_len
+    jmp send_response
+
+send_response:
     mov rax, 1
     mov rdi, [accept_fd]
-    mov rsi, http_response
-    mov rdx, http_response_len
+    mov rsi, http_ok
+    mov rdx, http_ok_len
+    syscall
+
+    mov rax, 1
+    mov rdi, [accept_fd]
+    mov rsi, r13
+    mov rdx, r14
     syscall
 
 read_file_loop:
